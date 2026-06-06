@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام مخزون المنتج النهائي — وادي النيل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#e2e0d8;--text:#1a1a18;--text2:#5a5a54;--text3:#9a9990;--copper:#b85c00;--copper-bg:#fff3e8;--copper-border:#f0c090;--green:#2d6a2d;--green-bg:#eaf3de;--green-border:#97c459;--red:#a32d2d;--red-bg:#fcebeb;--red-border:#f09595;--amber:#854f0b;--amber-bg:#faeeda;--amber-border:#fac775;--blue:#185fa5;--blue-bg:#e6f1fb;--blue-border:#85b7eb;--radius:10px;--radius-sm:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+.topnav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;background:var(--copper);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.brand-name{font-size:15px;font-weight:600}.brand-sub{font-size:12px;color:var(--text3)}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:6px 14px;border-radius:var(--radius-sm);font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;font-family:inherit;transition:background .15s}
+.nav-tab:hover{background:var(--surface2)}.nav-tab.active{background:var(--copper-bg);color:var(--copper);font-weight:500}
+.nav-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--copper-bg);border:1px solid var(--copper-border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--copper)}
+.main{padding:20px 24px;max-width:1400px;margin:0 auto}
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-value{font-size:22px;font-weight:600;color:var(--text);font-family:'IBM Plex Mono',monospace}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.kpi-card.warn .kpi-value{color:var(--amber)}.kpi-card.danger .kpi-value{color:var(--red)}.kpi-card.good .kpi-value{color:var(--green)}.kpi-card.copper .kpi-value{color:var(--copper)}
+.content-grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.panel-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.panel-title i{color:var(--text3)}
+.panel-actions{display:flex;gap:6px}
+.filters-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--surface2);flex-wrap:wrap}
+.filter-input,.filter-select{padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:inherit;background:var(--surface);color:var(--text);outline:none}
+.filter-input:focus,.filter-select:focus{border-color:var(--copper)}
+.btn{padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;font-family:inherit;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:4px}
+.btn:hover{background:var(--surface2)}.btn.primary{background:var(--copper);color:#fff;border-color:var(--copper)}.btn.primary:hover{opacity:.9}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:8px 12px;text-align:right;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--surface2)}td{padding:9px 12px;color:var(--text);white-space:nowrap}
+td.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}td.muted{color:var(--text2);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge.green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.badge.red{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.badge.amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.badge.blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+.badge.copper{background:var(--copper-bg);color:var(--copper);border:1px solid var(--copper-border)}
+.progress-wrap{display:flex;align-items:center;gap:6px}
+.progress-bar{height:6px;border-radius:3px;background:var(--surface2);flex:1;overflow:hidden;min-width:60px}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.progress-fill.green{background:var(--green)}.progress-fill.amber{background:#ef9f27}.progress-fill.red{background:#e24b4a}
+.progress-pct{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2);min-width:32px}
+.right-col{display:flex;flex-direction:column;gap:16px}
+.form-group{padding:12px 16px;border-bottom:1px solid var(--border)}
+.form-label{font-size:11px;color:var(--text3);margin-bottom:5px;display:block;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+.form-input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border .15s}
+.form-input:focus{border-color:var(--copper)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.type-btn{padding:7px;border:1px solid var(--border);border-radius:var(--radius-sm);text-align:center;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--text2);transition:all .15s}
+.type-btn.in.active{background:var(--green-bg);color:var(--green);border-color:var(--green-border)}
+.type-btn.out.active{background:var(--red-bg);color:var(--red);border-color:var(--red-border)}
+.calc-result{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--text2)}
+.calc-result strong{color:var(--text);font-family:'IBM Plex Mono',monospace}
+.txn-item{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.txn-icon{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.txn-icon.in{background:var(--green-bg);color:var(--green)}.txn-icon.out{background:var(--red-bg);color:var(--red)}
+.txn-body{flex:1;min-width:0}.txn-title{font-size:12px;font-weight:500;color:var(--text)}.txn-sub{font-size:11px;color:var(--text3)}
+.txn-kg{font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.txn-kg.in{color:var(--green)}.txn-kg.out{color:var(--red)}
+.alert-box{margin:12px 16px;padding:10px 12px;border-radius:var(--radius-sm);font-size:12px;display:flex;align-items:flex-start;gap:8px}
+.alert-box.warn{background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber)}
+.action-row{padding:10px 16px;display:flex;gap:6px;border-top:1px solid var(--border)}
+.section-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.section-tab{padding:10px 16px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.section-tab.active{color:var(--copper);border-bottom-color:var(--copper)}.section-tab:hover{color:var(--text2)}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:18px;font-weight:600;color:var(--text)}
+.page-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+.breadcrumb span{color:var(--text2)}
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+
+/* CONFIG PANEL */
+.config-panel{background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.config-title{font-size:13px;font-weight:600;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.config-input{width:100%;padding:7px 10px;border:1px solid var(--amber-border);border-radius:var(--radius-sm);font-size:13px;font-family:'IBM Plex Mono',monospace;background:var(--surface);color:var(--text);outline:none;margin-bottom:8px}
+.config-hint{font-size:11px;color:var(--amber);line-height:1.5}
+
+/* STATUS */
+.status-bar{padding:8px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--text3)}
+.status-dot.connected{background:var(--green)}.status-dot.error{background:var(--red)}.status-dot.loading{background:var(--amber)}
+@media(max-width:1100px){.content-grid{grid-template-columns:1fr}.kpi-strip{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kpi-strip{grid-template-columns:repeat(2,1fr)}.main{padding:12px}.topnav{padding:0 12px}.nav-tabs{display:none}}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="brand">
+    <div class="brand-icon"><i class="ti ti-hexagon" aria-hidden="true"></i></div>
+    <div><div class="brand-name">وادي النيل للصناعات المعدنية</div><div class="brand-sub">نظام إدارة المخازن</div></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab"><i class="ti ti-home" aria-hidden="true"></i> الرئيسية</button>
+    <button class="nav-tab active"><i class="ti ti-package" aria-hidden="true"></i> المخزون</button>
+    <button class="nav-tab"><i class="ti ti-file-invoice" aria-hidden="true"></i> أوامر الإنتاج</button>
+    <button class="nav-tab"><i class="ti ti-truck" aria-hidden="true"></i> الطلبات</button>
+    <button class="nav-tab"><i class="ti ti-chart-bar" aria-hidden="true"></i> التقارير</button>
+  </div>
+  <div class="nav-user"><span>عبدالرحمن العجيل</span><div class="avatar">ع.ع</div></div>
+</nav>
+
+<div class="main">
+
+<!-- CONFIG PANEL — مخفي، الاتصال بيحصل أوتوماتيك عبر SCRIPT_URL -->
+<div class="config-panel" id="configPanel" style="display:none">
+  <input class="config-input" id="sheetId" value="">
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="statusBar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">في انتظار الاتصال — اضغط "اتصال" أو "بيانات تجريبية"</span>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header" style="margin-top:16px">
+  <div>
+    <div class="breadcrumb"><span>الرئيسية</span><i class="ti ti-chevron-left" style="font-size:12px" aria-hidden="true"></i><span>المخزون</span><i class="ti ti-chevron-left" style="font-size:12px" aria-hidden="true"></i>المنتج النهائي</div>
+    <div class="page-title" style="margin-top:4px">مخزون المنتج النهائي (FG)</div>
+    <div class="page-sub" id="lastUpdate">—</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" onclick="refreshData()"><i class="ti ti-refresh" aria-hidden="true"></i> تحديث</button>
+    <button class="btn primary" onclick="document.getElementById('entryForm').scrollIntoView({behavior:'smooth'})">
+      <i class="ti ti-plus" aria-hidden="true"></i> إضافة حركة
+    </button>
+  </div>
+</div>
+
+<!-- KPI STRIP -->
+<div class="kpi-strip">
+  <div class="kpi-card copper"><div class="kpi-label">إجمالي المخزون</div><div class="kpi-value" id="kpiOnhand">—</div><div class="kpi-sub">كيلوجرام — OnHand</div></div>
+  <div class="kpi-card good"><div class="kpi-label">متاح للتسليم</div><div class="kpi-value" id="kpiAvail">—</div><div class="kpi-sub">كيلوجرام</div></div>
+  <div class="kpi-card warn"><div class="kpi-label">محجوز لعملاء</div><div class="kpi-value" id="kpiRes">—</div><div class="kpi-sub" id="kpiResPct">—</div></div>
+  <div class="kpi-card danger"><div class="kpi-label">راكد +60 يوم</div><div class="kpi-value" id="kpiStag">—</div><div class="kpi-sub">يحتاج مراجعة</div></div>
+  <div class="kpi-card"><div class="kpi-label">أصناف نشطة</div><div class="kpi-value" id="kpiItems">—</div><div class="kpi-sub">صنف في المخزون</div></div>
+</div>
+
+<!-- CONTENT GRID -->
+<div class="content-grid">
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><i class="ti ti-table" aria-hidden="true"></i> رصيد المخزون — تفصيلي</div>
+        <div class="panel-actions"><span class="tag" id="rowCountTag">—</span></div>
+      </div>
+      <div class="section-tabs">
+        <button class="section-tab active" onclick="filterSection('all',this)">الكل</button>
+        <button class="section-tab" onclick="filterSection('bar',this)">Bar قضبان</button>
+        <button class="section-tab" onclick="filterSection('coil',this)">Coil كوايل</button>
+        <button class="section-tab" onclick="filterSection('stagnant',this)">راكد ⚠</button>
+        <button class="section-tab" onclick="filterSection('reserved',this)">محجوز</button>
+      </div>
+      <div class="filters-bar">
+        <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+        <input class="filter-input" style="flex:1;min-width:140px" type="text" placeholder="بحث بالمقطع..." oninput="applyFilters()" id="searchInput">
+        <select class="filter-select" onchange="applyFilters()" id="cornerFilter">
+          <option value="">كل الأنواع</option>
+          <option value="RD">RD</option><option value="CE">CE</option>
+          <option value="ROD">ROD</option><option value="FUSE">FUSE</option>
+        </select>
+        <button class="btn" onclick="clearFilters()"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>كود الصنف</th><th>النوع</th><th>الطول</th>
+            <th>OnHand كجم</th><th>متاح كجم</th><th>محجوز كجم</th>
+            <th>نسبة المتاح</th><th>الحالة</th><th></th>
+          </tr></thead>
+          <tbody id="tableBody"><tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">اضغط "اتصال" أو "بيانات تجريبية" لتحميل البيانات</td></tr></tbody>
+        </table>
+      </div>
+      <div class="action-row" style="justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--text3)" id="rowCount">—</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn" onclick="changePage(-1)"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+          <span style="font-size:12px;padding:5px 10px;background:var(--surface2);border-radius:var(--radius-sm)" id="pageInfo">—</span>
+          <button class="btn" onclick="changePage(1)"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+    <div class="panel" id="entryForm">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-edit" aria-hidden="true"></i> إدخال حركة مخزون</div></div>
+      <div class="form-group">
+        <div class="form-label">نوع الحركة</div>
+        <div class="type-toggle">
+          <button class="type-btn in active" id="btnIN" onclick="setType('IN')"><i class="ti ti-arrow-down-circle" aria-hidden="true"></i> IN دخول</button>
+          <button class="type-btn out" id="btnOUT" onclick="setType('OUT')"><i class="ti ti-arrow-up-circle" aria-hidden="true"></i> OUT خروج</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">التاريخ</div>
+        <input class="form-input" type="date" id="txnDate">
+      </div>
+      <div class="form-group">
+        <div class="form-label">كود الصنف</div>
+        <select class="form-input" id="itemCode" onchange="updateCalc()">
+          <option value="">-- اختر المقطع --</option>
+          <option value="80×10" data-kgm="0.714">80×10 RD</option>
+          <option value="60×10" data-kgm="0.5355">60×10 RD</option>
+          <option value="50×10" data-kgm="0.4463">50×10 RD</option>
+          <option value="40×10" data-kgm="0.357">40×10 RD</option>
+          <option value="30×10" data-kgm="0.2678">30×10 RD</option>
+          <option value="25×10" data-kgm="0.2231">25×10 CE</option>
+          <option value="100×10" data-kgm="0.8925">100×10 RD</option>
+          <option value="120×10" data-kgm="1.071">120×10 RD</option>
+          <option value="15×5" data-kgm="0.067">15×5 RD</option>
+          <option value="20×5" data-kgm="0.0893">20×5 RD</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-row">
+          <div><div class="form-label">الطول (متر)</div><input class="form-input" type="number" id="length" placeholder="3.00" step="0.01" oninput="updateCalc()"></div>
+          <div><div class="form-label">العدد (قضبان)</div><input class="form-input" type="number" id="qty" placeholder="0" oninput="updateCalc()"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">الوزن المحسوب</div>
+        <div class="calc-result" id="calcResult">اختر الصنف وأدخل الطول والكمية</div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">الوزن الفعلي (ميزان) — كجم</div>
+        <input class="form-input" type="number" id="actualKg" placeholder="اختياري">
+      </div>
+      <div class="form-group">
+        <div class="form-label" id="partyLabel">جهة التوريد / الفرن</div>
+        <input class="form-input" type="text" id="partyName" placeholder="مثال: M400 أو ABB Sector 2">
+      </div>
+      <div class="form-group">
+        <div class="form-row">
+          <div><div class="form-label">رقم المستند</div><input class="form-input" type="text" id="docNo" placeholder="JO-1220"></div>
+          <div><div class="form-label">فئة الطول</div>
+          <select class="form-input" id="lengthCat">
+            <option value="3m">3m</option><option value="4m">4m</option>
+            <option value="coil">coil</option><option value="rod">rod</option><option value="other">other</option>
+          </select></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">ملاحظات</div>
+        <input class="form-input" type="text" id="notes" placeholder="اختياري">
+      </div>
+      <div class="action-row">
+        <button class="btn primary" style="flex:1;justify-content:center" onclick="submitEntry()">
+          <i class="ti ti-check" aria-hidden="true"></i> <span id="submitLabel">تسجيل الحركة في Google Sheets</span>
+        </button>
+        <button class="btn" onclick="clearForm()"><i class="ti ti-x" aria-hidden="true"></i></button>
+      </div>
+    </div>
+
+    <!-- RECENT TXN -->
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-history" aria-hidden="true"></i> آخر الحركات</div></div>
+      <div id="recentTxn"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">في انتظار البيانات...</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZS6v8R-NmBRABFdPtgR3jMl_5JjA81wdgDBAmN1qd0SmfvLhY80qSZbCTy8nMit1G/exec'; // ← ضع رابط الـ Web App هنا قبل النشر
+let currentType = 'IN';
+let currentPage = 1;
+const rowsPerPage = 8;
+let filteredData = [];
+let allBalanceData = [];
+let currentSection = 'all';
+let isConnected = false;
+let currentUser = 'عبدالرحمن';
+
+// ═══════════════════════════════════════════════════════════════
+// GOOGLE APPS SCRIPT WEB APP
+// ═══════════════════════════════════════════════════════════════
+async function connectSheet() {
+  // مش محتاجة تاني — الاتصال بيحصل أوتوماتيك عند التحميل
+  await refreshData();
+}
+
+async function refreshData() {
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_WEBAPP_URL_HERE') { useDemoData(); return; }
+  setStatus('loading','جاري تحميل البيانات...');
+  try {
+    const [balRes, txnRes] = await Promise.all([
+      callWebApp('balance'),
+      callWebApp('txn')
+    ]);
+    if (!balRes || balRes.error) throw new Error(balRes?.error || 'فشل تحميل البيانات');
+    allBalanceData = parseBalance(balRes.rows);
+    filteredData = [...allBalanceData];
+    if (txnRes && !txnRes.error) renderRecentTxn(parseTxn(txnRes.rows));
+    updateKPIs();
+    renderTable();
+    isConnected = true;
+    setStatus('connected','متصل بـ Google Sheets — آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG'));
+    document.getElementById('lastUpdate').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG');
+    document.getElementById('submitLabel').textContent = 'تسجيل الحركة في Google Sheets';
+  } catch(e) {
+    setStatus('error','خطأ في الاتصال: ' + e.message);
+  }
+}
+
+async function callWebApp(action) {
+  const res = await fetch(`${SCRIPT_URL}?action=${action}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+function parseBalance(rows) {
+  return rows.map(r => ({
+    code:        r.code        || '',
+    corner:      r.corner      || '',
+    length:      r.lengthCat   || '',
+    onhandQty:   r.onhandQty   || 0,
+    onhandKg:    r.onhandKg    || 0,
+    reservedQty: r.reservedQty || 0,
+    reservedKg:  r.reservedKg  || 0,
+    available:   r.availKg     || 0,
+    form:        r.lengthCat === 'coil' ? 'Coil' : 'Bar',
+    stagnant:    r.status === 'راكد',
+  }));
+}
+
+function parseTxn(rows) {
+  return rows.slice(0, 8).map(r => ({
+    type:  r.type      || '',
+    item:  r.itemCode  || '',
+    kg:    r.kgUsed    || 0,
+    party: r.partyName || '',
+    time:  r.enteredAt || '',
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════════════════════
+function useDemoData() {
+  allBalanceData = [
+    {code:'80×10',corner:'RD',length:'3m',onhandQty:320,onhandKg:6854,reservedKg:1654,available:5200,form:'Bar',stagnant:false},
+    {code:'80×10',corner:'RD',length:'4m',onhandQty:180,onhandKg:5143,reservedKg:243,available:4900,form:'Bar',stagnant:false},
+    {code:'60×10',corner:'RD',length:'3m',onhandQty:410,onhandKg:6591,reservedKg:391,available:6200,form:'Bar',stagnant:false},
+    {code:'60×10',corner:'RD',length:'4m',onhandQty:220,onhandKg:4708,reservedKg:1208,available:3500,form:'Bar',stagnant:false},
+    {code:'50×10',corner:'RD',length:'3m',onhandQty:150,onhandKg:2004,reservedKg:0,available:2004,form:'Bar',stagnant:false},
+    {code:'40×10',corner:'RD',length:'4m',onhandQty:280,onhandKg:3998,reservedKg:0,available:3998,form:'Bar',stagnant:true},
+    {code:'30×10',corner:'RD',length:'3m',onhandQty:500,onhandKg:4021,reservedKg:0,available:4021,form:'Bar',stagnant:true},
+    {code:'25×10',corner:'CE',length:'3m',onhandQty:600,onhandKg:4010,reservedKg:210,available:3800,form:'Bar',stagnant:true},
+    {code:'100×10',corner:'RD',length:'4m',onhandQty:90,onhandKg:3214,reservedKg:314,available:2900,form:'Bar',stagnant:false},
+    {code:'120×10',corner:'RD',length:'4m',onhandQty:60,onhandKg:2571,reservedKg:0,available:2571,form:'Bar',stagnant:true},
+    {code:'15×5',corner:'RD',length:'3m',onhandQty:850,onhandKg:171,reservedKg:79,available:92,form:'Bar',stagnant:false},
+    {code:'20×5',corner:'RD',length:'3m',onhandQty:700,onhandKg:187,reservedKg:0,available:187,form:'Bar',stagnant:false},
+    {code:'80×10',corner:'RD',length:'coil',onhandQty:12,onhandKg:480,reservedKg:0,available:480,form:'Coil',stagnant:false},
+    {code:'60×10',corner:'CE',length:'coil',onhandQty:8,onhandKg:320,reservedKg:0,available:320,form:'Coil',stagnant:true},
+    {code:'ROD8',corner:'ROD',length:'rod',onhandQty:5,onhandKg:8250,reservedKg:0,available:8250,form:'Bar',stagnant:false},
+  ];
+  filteredData = [...allBalanceData];
+  renderRecentTxn([
+    {type:'IN',item:'80×10 RD',kg:2039,party:'M400 — JO-1218',time:'اليوم 09:15'},
+    {type:'OUT',item:'60×10 RD',kg:1820,party:'ABB Sector 2',time:'اليوم 08:50'},
+    {type:'IN',item:'100×10 RD',kg:3214,party:'M350 — JO-1217',time:'أمس 16:30'},
+    {type:'OUT',item:'80×10 RD',kg:2500,party:'Schneider Electric',time:'أمس 14:10'},
+  ]);
+  updateKPIs();
+  renderTable();
+  setStatus('connected','بيانات تجريبية — اتصل بـ Google Sheets للبيانات الفعلية');
+  document.getElementById('lastUpdate').textContent = 'بيانات تجريبية — ' + new Date().toLocaleTimeString('ar-EG');
+  document.getElementById('submitLabel').textContent = 'تسجيل الحركة (تجريبي)';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function updateKPIs() {
+  const onhand  = allBalanceData.reduce((s,r)=>s+r.onhandKg,0);
+  const avail   = allBalanceData.reduce((s,r)=>s+r.available,0);
+  const res     = allBalanceData.reduce((s,r)=>s+(r.reservedKg||0),0);
+  const stag    = allBalanceData.filter(r=>r.stagnant).reduce((s,r)=>s+r.onhandKg,0);
+  const items   = new Set(allBalanceData.map(r=>r.code)).size;
+  const resPct  = onhand>0 ? ((res/onhand)*100).toFixed(1) : 0;
+  document.getElementById('kpiOnhand').textContent = onhand.toLocaleString('ar-EG',{maximumFractionDigits:0});
+  document.getElementById('kpiAvail').textContent  = avail.toLocaleString('ar-EG',{maximumFractionDigits:0});
+  document.getElementById('kpiRes').textContent    = res.toLocaleString('ar-EG',{maximumFractionDigits:0});
+  document.getElementById('kpiResPct').textContent = resPct + '% من الإجمالي';
+  document.getElementById('kpiStag').textContent   = stag.toLocaleString('ar-EG',{maximumFractionDigits:0});
+  document.getElementById('kpiItems').textContent  = items;
+}
+
+function renderTable() {
+  const body = document.getElementById('tableBody');
+  const start = (currentPage-1)*rowsPerPage;
+  const pageData = filteredData.slice(start, start+rowsPerPage);
+  const total = Math.ceil(filteredData.length/rowsPerPage)||1;
+  if (pageData.length===0) {
+    body.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">لا توجد نتائج</td></tr>';
+  } else {
+    body.innerHTML = pageData.map(r => {
+      const avPct = r.onhandKg>0 ? Math.round((r.available/r.onhandKg)*100) : 0;
+      const col = avPct>=70?'green':avPct>=30?'amber':'red';
+      const status = r.stagnant
+        ? '<span class="badge amber"><i class="ti ti-clock" aria-hidden="true"></i> راكد</span>'
+        : r.reservedKg>0
+          ? '<span class="badge blue"><i class="ti ti-lock" aria-hidden="true"></i> محجوز جزئياً</span>'
+          : r.available>0
+            ? '<span class="badge green"><i class="ti ti-check" aria-hidden="true"></i> متاح</span>'
+            : '<span class="badge red">نفذ</span>';
+      const cornerBadge = r.corner==='ROD'?'copper':r.corner==='FUSE'?'amber':'blue';
+      return `<tr>
+        <td><code style="font-size:12px;font-family:'IBM Plex Mono',monospace;background:var(--surface2);padding:2px 6px;border-radius:4px">${r.code}</code></td>
+        <td><span class="badge ${cornerBadge}">${r.corner}</span> <span class="muted" style="font-size:11px">${r.form}</span></td>
+        <td class="muted">${r.length}</td>
+        <td class="mono" style="font-weight:500">${r.onhandKg.toLocaleString('ar-EG',{maximumFractionDigits:1})}</td>
+        <td class="mono" style="color:var(--green)">${r.available.toLocaleString('ar-EG',{maximumFractionDigits:1})}</td>
+        <td class="mono" style="color:${(r.reservedKg||0)>0?'var(--blue)':'var(--text3)'}">${(r.reservedKg||0)>0?r.reservedKg.toLocaleString('ar-EG',{maximumFractionDigits:1}):'—'}</td>
+        <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${col}" style="width:${avPct}%"></div></div><span class="progress-pct">${avPct}%</span></div></td>
+        <td>${status}</td>
+        <td><button class="btn" style="padding:3px 8px;font-size:11px"><i class="ti ti-eye" aria-hidden="true"></i></button></td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('rowCount').textContent = `عرض ${pageData.length} من ${filteredData.length} صنف`;
+  document.getElementById('pageInfo').textContent = `${currentPage} / ${total}`;
+  document.getElementById('rowCountTag').textContent = filteredData.length + ' صنف';
+}
+
+function renderRecentTxn(txns) {
+  document.getElementById('recentTxn').innerHTML = txns.map(t =>
+    `<div class="txn-item">
+      <div class="txn-icon ${t.type.toLowerCase()}"><i class="ti ti-arrow-${t.type==='IN'?'down':'up'}-circle" aria-hidden="true"></i></div>
+      <div class="txn-body">
+        <div class="txn-title">${t.item} — <span style="color:var(--text3);font-weight:400">${t.type}</span></div>
+        <div class="txn-sub">${t.party}</div>
+        <div class="txn-sub">${t.time}</div>
+      </div>
+      <div class="txn-kg ${t.type.toLowerCase()}">${t.type==='IN'?'+':'−'}${t.kg.toLocaleString('ar-EG',{maximumFractionDigits:0})} كجم</div>
+    </div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════
+function filterSection(section, el) {
+  document.querySelectorAll('.section-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentSection = section;
+  applyFilters();
+}
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const corner = document.getElementById('cornerFilter').value;
+  filteredData = allBalanceData.filter(r => {
+    if (currentSection==='bar' && r.form!=='Bar') return false;
+    if (currentSection==='coil' && r.form!=='Coil') return false;
+    if (currentSection==='stagnant' && !r.stagnant) return false;
+    if (currentSection==='reserved' && !(r.reservedKg>0)) return false;
+    if (search && !r.code.toLowerCase().includes(search)) return false;
+    if (corner && r.corner!==corner) return false;
+    return true;
+  });
+  currentPage = 1;
+  renderTable();
+}
+function clearFilters() {
+  document.getElementById('searchInput').value='';
+  document.getElementById('cornerFilter').value='';
+  currentSection='all';
+  document.querySelectorAll('.section-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  filteredData=[...allBalanceData];
+  currentPage=1;
+  renderTable();
+}
+function changePage(dir) {
+  const total = Math.ceil(filteredData.length/rowsPerPage)||1;
+  currentPage = Math.max(1, Math.min(total, currentPage+dir));
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENTRY FORM
+// ═══════════════════════════════════════════════════════════════
+function setType(type) {
+  currentType = type;
+  document.getElementById('btnIN').classList.toggle('active',type==='IN');
+  document.getElementById('btnOUT').classList.toggle('active',type==='OUT');
+  document.getElementById('partyLabel').textContent = type==='IN' ? 'جهة التوريد / الفرن' : 'العميل';
+}
+function updateCalc() {
+  const sel = document.getElementById('itemCode');
+  const opt = sel.options[sel.selectedIndex];
+  const kgm = parseFloat(opt.dataset.kgm||0);
+  const len = parseFloat(document.getElementById('length').value||0);
+  const qty = parseInt(document.getElementById('qty').value||0);
+  if (kgm&&len&&qty) {
+    const calc = (kgm*len*qty).toFixed(2);
+    document.getElementById('calcResult').innerHTML = `${qty} قضيب × ${len}م × ${kgm} كجم/م = <strong>${parseFloat(calc).toLocaleString('ar-EG')} كجم</strong>`;
+  } else {
+    document.getElementById('calcResult').innerHTML = 'اختر الصنف وأدخل الطول والكمية';
+  }
+}
+
+async function submitEntry() {
+  const itemEl = document.getElementById('itemCode');
+  const item   = itemEl.value;
+  const len    = document.getElementById('length').value;
+  const qty    = document.getElementById('qty').value;
+  const actual = document.getElementById('actualKg').value;
+  const party  = document.getElementById('partyName').value;
+  const doc    = document.getElementById('docNo').value;
+  const lcat   = document.getElementById('lengthCat').value;
+  const notes  = document.getElementById('notes').value;
+  const date   = document.getElementById('txnDate').value;
+  if (!item||!len||!qty) { alert('يرجى تعبئة الصنف والطول والكمية على الأقل'); return; }
+
+  const kgm    = parseFloat(itemEl.options[itemEl.selectedIndex].dataset.kgm||0);
+  const calcKg = (kgm*parseFloat(len)*parseInt(qty)).toFixed(2);
+  const usedKg = actual || calcKg;
+  const d = new Date(date);
+  const fmtDate = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  const optText    = itemEl.options[itemEl.selectedIndex].text;
+  const cornerType = optText.split(' ').pop();
+
+  const payload = {
+    date:       fmtDate,
+    type:       currentType,
+    docNo:      doc,
+    partyType:  currentType === 'IN' ? 'Furnace' : 'Customer',
+    partyName:  party,
+    itemCode:   item,
+    cornerType: cornerType,
+    form:       lcat === 'coil' ? 'Coil' : 'Bar',
+    length:     parseFloat(len),
+    qty:        parseInt(qty),
+    kgCalc:     parseFloat(calcKg),
+    kgActual:   actual ? parseFloat(actual) : '',
+    kgUsed:     parseFloat(usedKg),
+    lengthCat:  lcat,
+    location:   'مخزن رئيسي',
+    notes:      notes,
+    enteredBy:  currentUser
+  };
+
+  if (isConnected && SCRIPT_URL && SCRIPT_URL !== 'YOUR_WEBAPP_URL_HERE') {
+    setStatus('loading','جاري الحفظ في Google Sheets...');
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method:  'POST',
+        headers: {'Content-Type':'application/json'},
+        body:    JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus('connected','✅ تم الحفظ بنجاح — ' + new Date().toLocaleTimeString('ar-EG'));
+        clearForm();
+        setTimeout(() => refreshData(), 1200);
+      } else {
+        throw new Error(data.error || 'فشل الحفظ');
+      }
+    } catch(e) {
+      setStatus('error','خطأ في الحفظ: ' + e.message);
+    }
+  } else {
+    alert('✅ سيتم حفظ الحركة:\n' + JSON.stringify(payload, null, 2).slice(0,300) + '\n\n(وصّل بـ Google Apps Script للحفظ الفعلي)');
+    clearForm();
+  }
+}
+
+function clearForm() {
+  ['itemCode','length','qty','actualKg','partyName','docNo','notes'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el.tagName==='SELECT') el.selectedIndex=0; else el.value='';
+  });
+  document.getElementById('txnDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('calcResult').innerHTML='اختر الصنف وأدخل الطول والكمية';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATUS
+// ═══════════════════════════════════════════════════════════════
+function setStatus(state, msg) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot ' + state;
+  document.getElementById('statusText').textContent = msg;
+}
+
+// ── INIT ──
+document.getElementById('txnDate').value = new Date().toISOString().split('T')[0];
+// اتصال أوتوماتيك عند فتح الصفحة
+refreshData();
+</script>
+</body>
+</html>
