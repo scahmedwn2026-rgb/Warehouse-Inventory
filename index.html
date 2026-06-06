@@ -285,7 +285,7 @@ td.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}td.muted{color:var(
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZS6v8R-NmBRABFdPtgR3jMl_5JjA81wdgDBAmN1qd0SmfvLhY80qSZbCTy8nMit1G/exec'; // ← ضع رابط الـ Web App هنا قبل النشر
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHRmr6WsD6jTCXGOBDUqfNCWroqF9o6H-DsGoFdxGJLBeFjHqc5RtJS-KJTqTqq2ct/exec'; // ← ضع رابط الـ Web App هنا قبل النشر
 let currentType = 'IN';
 let currentPage = 1;
 const rowsPerPage = 8;
@@ -567,16 +567,18 @@ async function submitEntry() {
   if (isConnected && SCRIPT_URL && SCRIPT_URL !== 'YOUR_WEBAPP_URL_HERE') {
     setStatus('loading','جاري الحفظ في Google Sheets...');
     try {
+      // نبعت كـ text/plain عشان نتخطى الـ CORS preflight
       const res = await fetch(SCRIPT_URL, {
-        method:  'POST',
-        headers: {'Content-Type':'application/json'},
-        body:    JSON.stringify(payload)
+        method:   'POST',
+        redirect: 'follow',
+        headers:  {'Content-Type': 'text/plain;charset=utf-8'},
+        body:     JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
         setStatus('connected','✅ تم الحفظ بنجاح — ' + new Date().toLocaleTimeString('ar-EG'));
         clearForm();
-        setTimeout(() => refreshData(), 1200);
+        setTimeout(() => refreshData(), 1500);
       } else {
         throw new Error(data.error || 'فشل الحفظ');
       }
