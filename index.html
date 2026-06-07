@@ -511,6 +511,22 @@ function useDemoData() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// HELPERS — تنسيق الأرقام (أرقام غربية دائماً — تظهر واضحة)
+// ═══════════════════════════════════════════════════════════════
+// fmt(1234.5)   → "1,234.5"
+// fmt(0)        → "0"
+// fmtD(0)       → "—"  (للجداول: صفر = شرطة)
+function fmt(n, decimals=0) {
+  const v = Number(n) || 0;
+  return v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtD(n, decimals=1) {
+  const v = Number(n) || 0;
+  if (v === 0) return '—';
+  return v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════════════
 function updateKPIs() {
@@ -519,13 +535,13 @@ function updateKPIs() {
   const res    = allBalanceData.reduce((s,r) => s + (r.reservedKg || 0), 0);
   const stag   = allBalanceData.filter(r => r.stagnant).reduce((s,r) => s + r.onhandKg, 0);
   const items  = new Set(allBalanceData.map(r => r.code)).size;
-  const resPct = onhand > 0 ? ((res / onhand) * 100).toFixed(1) : 0;
+  const resPct = onhand > 0 ? ((res / onhand) * 100).toFixed(1) : '0.0';
 
-  document.getElementById('kpiOnhand').textContent = onhand.toLocaleString('ar-EG', {maximumFractionDigits:0});
-  document.getElementById('kpiAvail').textContent  = avail.toLocaleString('ar-EG',  {maximumFractionDigits:0});
-  document.getElementById('kpiRes').textContent    = res.toLocaleString('ar-EG',    {maximumFractionDigits:0});
+  document.getElementById('kpiOnhand').textContent = fmt(onhand);
+  document.getElementById('kpiAvail').textContent  = fmt(avail);
+  document.getElementById('kpiRes').textContent    = fmt(res);
   document.getElementById('kpiResPct').textContent = resPct + '% من الإجمالي';
-  document.getElementById('kpiStag').textContent   = stag.toLocaleString('ar-EG',   {maximumFractionDigits:0});
+  document.getElementById('kpiStag').textContent   = fmt(stag);
   document.getElementById('kpiItems').textContent  = items;
 }
 
@@ -552,10 +568,10 @@ function renderTable() {
       return `<tr>
         <td><code style="font-size:12px;font-family:'IBM Plex Mono',monospace;background:var(--surface2);padding:2px 6px;border-radius:4px">${r.code}</code></td>
         <td><span class="badge ${cornerBadge}">${r.corner}</span> <span class="muted" style="font-size:11px">${r.form}</span></td>
-        <td class="muted">${r.length}</td>
-        <td class="mono" style="font-weight:500">${r.onhandKg.toLocaleString('ar-EG',{maximumFractionDigits:1})}</td>
-        <td class="mono" style="color:var(--green)">${r.available.toLocaleString('ar-EG',{maximumFractionDigits:1})}</td>
-        <td class="mono" style="color:${(r.reservedKg||0)>0?'var(--blue)':'var(--text3)'}">${(r.reservedKg||0)>0?r.reservedKg.toLocaleString('ar-EG',{maximumFractionDigits:1}):'—'}</td>
+        <td class="muted">${r.length || '—'}</td>
+        <td class="mono" style="font-weight:500">${fmtD(r.onhandKg)}</td>
+        <td class="mono" style="color:var(--green)">${fmtD(r.available)}</td>
+        <td class="mono" style="color:${(r.reservedKg||0)>0?'var(--blue)':'var(--text3)'}">${fmtD(r.reservedKg)}</td>
         <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${col}" style="width:${avPct}%"></div></div><span class="progress-pct">${avPct}%</span></div></td>
         <td>${status}</td>
         <td><button class="btn" style="padding:3px 8px;font-size:11px" title="تفاصيل"><i class="ti ti-eye"></i></button></td>
@@ -583,7 +599,7 @@ function renderRecentTxn(txns) {
         <div class="txn-sub">${t.party}</div>
         <div class="txn-sub">${t.time}</div>
       </div>
-      <div class="txn-kg ${typeLC}">${t.type==='IN'?'+':'−'}${Number(t.kg).toLocaleString('ar-EG',{maximumFractionDigits:0})} كجم</div>
+      <div class="txn-kg ${typeLC}">${t.type==='IN'?'+':'−'}${fmt(t.kg)} كجم</div>
     </div>`;
   }).join('');
 }
