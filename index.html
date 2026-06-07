@@ -316,7 +316,7 @@ td.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}td.muted{color:var(
 // 1. افتح Google Apps Script وانشر الكود كـ Web App
 // 2. انسخ رابط الـ Deployment URL
 // 3. احطه هنا بدل YOUR_WEBAPP_URL_HERE
-const SCRIPT_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzi5fFQ60Ml6NzmI-yT2aWqy4uQhMPxOul-rtuSJGEZOGI2a7mMBkzJoDH2eKF11_fe/exec';
+const SCRIPT_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbw3k9In-qDmbrjsijvws33klYtwgV8oQPa97i0-6fK8cxhOjPK5KX3BzvihS7fHyzix/exec';
 
 // ── ممكن تحفظه في localStorage من الواجهة بدل ما تعدل الكود ──
 function getScriptUrl() {
@@ -364,10 +364,10 @@ async function refreshData() {
   btnR.disabled = true;
 
   try {
-    // جلب الأرصدة والحركات بالتوازي
+    // JSONP — بيتجاوز CORS تماماً سواء على GitHub أو أي استضافة
     const [balRes, txnRes] = await Promise.all([
-      callWebApp(SCRIPT_URL, 'balance'),
-      callWebApp(SCRIPT_URL, 'txn')
+      callWebAppJSONP(SCRIPT_URL, 'balance'),
+      callWebAppJSONP(SCRIPT_URL, 'txn')
     ]);
 
     isConnected = true;
@@ -400,11 +400,10 @@ async function refreshData() {
 
   } catch(e) {
     dbg('❌ refreshData catch: ' + e.message);
-    // لو الاتصال فشل ولكن عندنا داتا سابقة، نفضل نعرضها
     if (allBalanceData.length > 0) {
       setStatus('error', 'تعذر التحديث — يُعرض آخر رصيد محفوظ | ' + e.message);
     } else {
-      setStatus('error', 'فشل الاتصال: ' + e.message + ' — تأكد من رابط الـ Web App');
+      setStatus('error', 'فشل الاتصال: ' + e.message + ' — تأكد من رابط الـ Web App والنشر');
       document.getElementById('tableBody').innerHTML =
         '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--red)">❌ ' + e.message + '</td></tr>';
     }
@@ -413,34 +412,37 @@ async function refreshData() {
   }
 }
 
-// ── Fetch مع timeout ─────────────────────────────────────────
-async function callWebApp(url, action) {
-  const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), 15000); // 15 ثانية
+// ── JSONP — يعمل على أي استضافة بدون مشاكل CORS ─────────────
+function callWebAppJSONP(url, action) {
+  return new Promise((resolve, reject) => {
+    const cbName  = '__gs_' + action + '_' + Date.now();
+    const script  = document.createElement('script');
 
-  try {
-    const res = await fetch(`${url}?action=${action}`, {
-      method:   'GET',
-      redirect: 'follow',
-      signal:   controller.signal
-    });
-    clearTimeout(timeoutId);
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('انتهت مهلة الاتصال (15 ثانية) — تأكد من نشر الـ Web App'));
+    }, 15000);
 
-    if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
-
-    const text = await res.text();
-    dbg('[' + action + '] raw: ' + text.slice(0, 120));
-
-    try {
-      return JSON.parse(text);
-    } catch(_) {
-      throw new Error('رد غير JSON من الـ Script: ' + text.slice(0, 80));
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
     }
-  } catch(e) {
-    clearTimeout(timeoutId);
-    if (e.name === 'AbortError') throw new Error('انتهت مهلة الاتصال (15 ثانية)');
-    throw e;
-  }
+
+    window[cbName] = function(data) {
+      cleanup();
+      dbg('[JSONP ' + action + '] ok: ' + JSON.stringify(data).slice(0, 80));
+      resolve(data);
+    };
+
+    script.src     = url + '?action=' + action + '&callback=' + cbName;
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('فشل تحميل الـ Script — تحقق من الرابط'));
+    };
+
+    document.head.appendChild(script);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
