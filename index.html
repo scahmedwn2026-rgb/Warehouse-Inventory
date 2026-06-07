@@ -130,6 +130,8 @@ td.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}td.muted{color:var(
   <div class="status-dot" id="statusDot"></div>
   <span id="statusText">في انتظار الاتصال — اضغط "اتصال" أو "بيانات تجريبية"</span>
 </div>
+<!-- DEBUG LOG -->
+<div id="debugBox" style="display:none;margin:4px 0 0;padding:10px 16px;background:#1a1a18;color:#7fff7f;font-family:monospace;font-size:11px;max-height:130px;overflow-y:auto;direction:ltr;white-space:pre-wrap;"></div>
 
 <!-- PAGE HEADER -->
 <div class="page-header" style="margin-top:16px">
@@ -285,7 +287,7 @@ td.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}td.muted{color:var(
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGl7FsvhF-bycLt2hVFJ21ceijbuNk9lKNXzNKIFfzmVdloGTohIqO4RykP2QpJOR4/exec'; // ← ضع رابط الـ Web App هنا قبل النشر
+const SCRIPT_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnQTGvBAsH2KdhvhIy44CPiOL4JTckMhFtRJ3DzN_AVjNsg6aA0fzryPqs7zx4y4dINL8iADy0rcrCudrPCHVT9TrDYwebt2-vAi5hpTro7p2a6C_4PiRTUbSWor0vys-_D2Rk7AX4_kJXqBT62l56b-5uzQmDMtKwgr1PztYn1fjVtGyQts1qsi4W8i_JII_rbGpphCn1UQA_Yujn9OMU7uSV7x7iOf1cY6ueUYXooMcuLSrn-lU1qa8PTReIE_ScGV6NGpiHWnY4x9eT1SnHXC4SyKlA&lib=MDLcwXO-UhfjYF2a0aXz2VWxdQLWoTI6O'; // ← ضع رابط الـ Web App هنا قبل النشر
 let currentType = 'IN';
 let currentPage = 1;
 const rowsPerPage = 8;
@@ -299,40 +301,58 @@ let currentUser = 'عبدالرحمن';
 // GOOGLE APPS SCRIPT WEB APP
 // ═══════════════════════════════════════════════════════════════
 async function connectSheet() {
-  // مش محتاجة تاني — الاتصال بيحصل أوتوماتيك عند التحميل
   await refreshData();
 }
 
 async function refreshData() {
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_WEBAPP_URL_HERE') { useDemoData(); return; }
-  setStatus('loading','جاري تحميل البيانات...');
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_WEBAPP_URL_HERE') {
+    useDemoData();
+    return;
+  }
+  setStatus('loading', 'جاري تحميل البيانات...');
   try {
+    // نجرب الاتصال بـ GET أولاً — لو نجح يبقى الـ Script شغال
     const [balRes, txnRes] = await Promise.all([
       callWebApp('balance'),
       callWebApp('txn')
     ]);
-    if (!balRes || balRes.error) throw new Error(balRes?.error || 'فشل تحميل البيانات');
-    allBalanceData = parseBalance(balRes.rows);
+
+    // الاتصال نجح بمجرد ما رجع رد — حتى لو الداتا فاضية
+    isConnected = true;
+    document.getElementById('submitLabel').textContent = 'تسجيل الحركة في Google Sheets';
+
+    if (balRes && !balRes.error && Array.isArray(balRes.rows)) {
+      allBalanceData = parseBalance(balRes.rows);
+    } else {
+      allBalanceData = [];
+    }
     filteredData = [...allBalanceData];
-    if (txnRes && !txnRes.error) renderRecentTxn(parseTxn(txnRes.rows));
+
+    if (txnRes && !txnRes.error && Array.isArray(txnRes.rows)) {
+      renderRecentTxn(parseTxn(txnRes.rows));
+    }
+
     updateKPIs();
     renderTable();
-    isConnected = true;
-    setStatus('connected','متصل بـ Google Sheets — آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG'));
+    setStatus('connected', 'متصل بـ Google Sheets — آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG'));
     document.getElementById('lastUpdate').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG');
-    document.getElementById('submitLabel').textContent = 'تسجيل الحركة في Google Sheets';
+
   } catch(e) {
-    setStatus('error','خطأ في الاتصال: ' + e.message);
+    // حتى لو فيه خطأ في القراءة، نفعّل الكتابة عشان ما نوقفش الـ submit
+    isConnected = true;
+    document.getElementById('submitLabel').textContent = 'تسجيل الحركة في Google Sheets';
+    setStatus('error', 'خطأ في تحميل البيانات: ' + e.message + ' — الحفظ لا يزال يعمل');
   }
 }
 
 async function callWebApp(action) {
-  const res = await fetch(`${SCRIPT_URL}?action=${action}`);
+  const res = await fetch(`${SCRIPT_URL}?action=${action}`, { redirect: 'follow' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
 function parseBalance(rows) {
+  if (!rows || !rows.length) return [];
   return rows.map(r => ({
     code:        r.code        || '',
     corner:      r.corner      || '',
@@ -348,6 +368,7 @@ function parseBalance(rows) {
 }
 
 function parseTxn(rows) {
+  if (!rows || !rows.length) return [];
   return rows.slice(0, 8).map(r => ({
     type:  r.type      || '',
     item:  r.itemCode  || '',
@@ -534,60 +555,72 @@ async function submitEntry() {
   const lcat   = document.getElementById('lengthCat').value;
   const notes  = document.getElementById('notes').value;
   const date   = document.getElementById('txnDate').value;
-  if (!item||!len||!qty) { alert('يرجى تعبئة الصنف والطول والكمية على الأقل'); return; }
 
-  const kgm    = parseFloat(itemEl.options[itemEl.selectedIndex].dataset.kgm||0);
-  const calcKg = (kgm*parseFloat(len)*parseInt(qty)).toFixed(2);
-  const usedKg = actual || calcKg;
-  const d = new Date(date);
-  const fmtDate = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  const optText    = itemEl.options[itemEl.selectedIndex].text;
+  if (!item || !len || !qty) {
+    alert('يرجى تعبئة الصنف والطول والكمية على الأقل');
+    return;
+  }
+
+  const kgm      = parseFloat(itemEl.options[itemEl.selectedIndex].dataset.kgm || 0);
+  const calcKg   = (kgm * parseFloat(len) * parseInt(qty)).toFixed(2);
+  const usedKg   = actual || calcKg;
+  const d        = new Date(date);
+  const fmtDate  = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  const optText  = itemEl.options[itemEl.selectedIndex].text;
   const cornerType = optText.split(' ').pop();
 
   const payload = {
-    date:       fmtDate,
-    type:       currentType,
-    docNo:      doc,
-    partyType:  currentType === 'IN' ? 'Furnace' : 'Customer',
-    partyName:  party,
-    itemCode:   item,
-    cornerType: cornerType,
-    form:       lcat === 'coil' ? 'Coil' : 'Bar',
-    length:     parseFloat(len),
-    qty:        parseInt(qty),
-    kgCalc:     parseFloat(calcKg),
-    kgActual:   actual ? parseFloat(actual) : '',
-    kgUsed:     parseFloat(usedKg),
-    lengthCat:  lcat,
-    location:   'مخزن رئيسي',
-    notes:      notes,
-    enteredBy:  currentUser
+    date: fmtDate, type: currentType, docNo: doc,
+    partyType: currentType === 'IN' ? 'Furnace' : 'Customer',
+    partyName: party, itemCode: item, cornerType: cornerType,
+    form: lcat === 'coil' ? 'Coil' : 'Bar',
+    length: parseFloat(len), qty: parseInt(qty),
+    kgCalc: parseFloat(calcKg),
+    kgActual: actual ? parseFloat(actual) : '',
+    kgUsed: parseFloat(usedKg),
+    lengthCat: lcat, location: 'مخزن رئيسي',
+    notes: notes, enteredBy: currentUser
   };
 
-  if (isConnected && SCRIPT_URL && SCRIPT_URL !== 'YOUR_WEBAPP_URL_HERE') {
-    setStatus('loading','جاري الحفظ في Google Sheets...');
-    try {
-      // نبعت كـ text/plain عشان نتخطى الـ CORS preflight
-      const res = await fetch(SCRIPT_URL, {
-        method:   'POST',
-        redirect: 'follow',
-        headers:  {'Content-Type': 'text/plain;charset=utf-8'},
-        body:     JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStatus('connected','✅ تم الحفظ بنجاح — ' + new Date().toLocaleTimeString('ar-EG'));
-        clearForm();
-        setTimeout(() => refreshData(), 1500);
-      } else {
-        throw new Error(data.error || 'فشل الحفظ');
-      }
-    } catch(e) {
-      setStatus('error','خطأ في الحفظ: ' + e.message);
+  dbg('submit → isConnected=' + isConnected + ' | SCRIPT_URL=' + (SCRIPT_URL !== 'YOUR_WEBAPP_URL_HERE' ? 'SET' : 'NOT SET'));
+
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_WEBAPP_URL_HERE') {
+    dbg('⚠ SCRIPT_URL غير محدد — وضع تجريبي');
+    alert('⚠ SCRIPT_URL غير محدد في الكود');
+    return;
+  }
+
+  setStatus('loading', 'جاري الحفظ في Google Sheets...');
+  dbg('POST → ' + SCRIPT_URL);
+  dbg('payload → ' + JSON.stringify(payload).slice(0, 120));
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method:   'POST',
+      redirect: 'follow',
+      headers:  { 'Content-Type': 'text/plain;charset=utf-8' },
+      body:     JSON.stringify(payload)
+    });
+
+    dbg('response status → ' + res.status + ' ' + res.statusText);
+    const text = await res.text();
+    dbg('response body → ' + text.slice(0, 200));
+
+    let data;
+    try { data = JSON.parse(text); } catch(_) { throw new Error('رد غير صالح: ' + text.slice(0, 100)); }
+
+    if (data.success) {
+      isConnected = true;
+      setStatus('connected', '✅ تم الحفظ بنجاح — ' + new Date().toLocaleTimeString('ar-EG'));
+      dbg('✅ تم الحفظ بنجاح enteredAt=' + data.enteredAt);
+      clearForm();
+      setTimeout(() => refreshData(), 1500);
+    } else {
+      throw new Error(data.error || 'فشل الحفظ بدون تفاصيل');
     }
-  } else {
-    alert('✅ سيتم حفظ الحركة:\n' + JSON.stringify(payload, null, 2).slice(0,300) + '\n\n(وصّل بـ Google Apps Script للحفظ الفعلي)');
-    clearForm();
+  } catch(e) {
+    dbg('❌ catch: ' + e.message);
+    setStatus('error', 'خطأ في الحفظ: ' + e.message);
   }
 }
 
@@ -601,12 +634,22 @@ function clearForm() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// STATUS
+// STATUS + DEBUG
 // ═══════════════════════════════════════════════════════════════
 function setStatus(state, msg) {
   const dot = document.getElementById('statusDot');
   dot.className = 'status-dot ' + state;
   document.getElementById('statusText').textContent = msg;
+  if (state === 'error') dbg('❌ ' + msg);
+}
+
+function dbg(msg) {
+  const box = document.getElementById('debugBox');
+  box.style.display = 'block';
+  const ts = new Date().toLocaleTimeString('en-GB');
+  box.textContent += '[' + ts + '] ' + msg + '\n';
+  box.scrollTop = box.scrollHeight;
+  console.log('[DBG]', msg);
 }
 
 // ── INIT ──
